@@ -6,15 +6,22 @@ const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_ZZKinN9nq-Z_c7DXCylmAg_gX1SNJ8A
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-// Ambil elemen dari HTML
+// Elemen KPI
 const totalBalanceEl = document.getElementById('total-balance');
 const totalIncomeEl = document.getElementById('total-income');
 const totalExpenseEl = document.getElementById('total-expense');
+const initialBalanceDisplayEl = document.getElementById('initial-balance-display');
+const badgeBalanceEl = document.getElementById('badge-balance');
+const badgeExpenseEl = document.getElementById('badge-expense');
+const badgeIncomeEl = document.getElementById('badge-income');
+
+// Elemen Form & Riwayat
 const transactionForm = document.getElementById('transaction-form');
 const transactionList = document.getElementById('transaction-list');
 const btnSetSaldo = document.getElementById('btn-set-saldo');
 const btnReset = document.getElementById('btn-reset');
 const btnExportExcel = document.getElementById('btn-export-excel');
+const btnExportExcelSide = document.getElementById('btn-export-excel-side');
 const btnSubmit = document.getElementById('btn-submit');
 const amountInput = document.getElementById('amount');
 const dateInput = document.getElementById('date');
@@ -26,6 +33,7 @@ const historyPrevMonthBtn = document.getElementById('history-prev-month');
 const historyNextMonthBtn = document.getElementById('history-next-month');
 const historyMonthBtn = document.getElementById('history-month-btn');
 const btnShowAll = document.getElementById('btn-show-all');
+const searchInput = document.getElementById('search-input');
 
 // Elemen Bottom Sheet Calendar
 const calendarModal = document.getElementById('calendar-modal');
@@ -34,6 +42,13 @@ const calendarGrid = document.getElementById('calendar-grid');
 const prevMonthBtn = document.getElementById('prev-month');
 const nextMonthBtn = document.getElementById('next-month');
 const closeCalendarBtn = document.getElementById('close-calendar');
+
+// Elemen Custom Modal Set Saldo Awal
+const saldoModal = document.getElementById('saldo-modal');
+const saldoForm = document.getElementById('saldo-form');
+const saldoModalInput = document.getElementById('saldo-modal-input');
+const closeSaldoModalBtn = document.getElementById('close-saldo-modal');
+const btnSaveSaldo = document.getElementById('btn-save-saldo');
 
 const NAMA_BULAN = [
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -55,7 +70,7 @@ function parseDateString(str) {
 
 function formatTanggalIndo(str) {
   const d = parseDateString(str);
-  return `${NAMA_HARI[d.getDay()]}, ${d.getDate()} ${NAMA_BULAN[d.getMonth()]} ${d.getFullYear()}`;
+  return `${d.getDate()} ${NAMA_BULAN[d.getMonth()].slice(0, 3)} ${d.getFullYear()}`;
 }
 
 function generateUniqueId() {
@@ -67,11 +82,15 @@ const todayStr = toDateString(new Date());
 let selectedInputDate = todayStr;
 let selectedFilterDate = todayStr;
 let isShowAll = false;
+let searchQuery = '';
 let calendarViewDate = new Date();
-let calendarMode = 'input'; // 'input' atau 'filter'
+let calendarMode = 'input';
 
 let initialBalance = 0;
 let transactions = [];
+
+let renderedStripMonthKey = '';
+let slideDirection = 'next';
 
 function formatRibuan(angka) {
   return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
@@ -88,11 +107,33 @@ function parseRupiahToNumber(str) {
   return Number(cleanNumber) || 0;
 }
 
-// Auto-format titik ribuan saat ngetik nominal
 amountInput.addEventListener('input', (e) => {
   const rawValue = e.target.value.replace(/[^0-9]/g, '');
   e.target.value = rawValue === '' ? '' : formatRibuan(Number(rawValue));
 });
+
+searchInput.addEventListener('input', (e) => {
+  searchQuery = e.target.value.trim().toLowerCase();
+  updateUI();
+});
+
+// ==========================================
+// SINKRONISASI TANGGAL FORM INPUT <-> RIWAYAT
+// ==========================================
+function syncActiveDate(newDateStr) {
+  if (newDateStr < selectedFilterDate) {
+    slideDirection = 'prev';
+  } else {
+    slideDirection = 'next';
+  }
+
+  selectedInputDate = newDateStr;
+  selectedFilterDate = newDateStr;
+  isShowAll = false;
+  btnShowAll.classList.remove('active');
+  updateInputDateDisplay();
+  updateUI();
+}
 
 // ==========================================
 // AMBIL DATA DARI SUPABASE CLOUD
@@ -131,7 +172,6 @@ async function loadCloudData() {
   }
 }
 
-// Realtime Sync
 db.channel('public-sync')
   .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => {
     loadCloudData();
@@ -148,7 +188,6 @@ function updateInputDateDisplay() {
     : formatTanggalIndo(selectedInputDate);
 }
 
-// Fungsi pindah bulan pada riwayat transaksi
 function shiftFilterMonth(offset) {
   const current = parseDateString(selectedFilterDate);
   const targetYear = current.getFullYear();
@@ -156,19 +195,18 @@ function shiftFilterMonth(offset) {
   const maxDaysInTarget = new Date(targetYear, targetMonth + 1, 0).getDate();
   const safeDay = Math.min(current.getDate(), maxDaysInTarget);
 
-  selectedFilterDate = toDateString(new Date(targetYear, targetMonth, safeDay));
-  isShowAll = false;
-  btnShowAll.classList.remove('active');
-  updateUI();
+  const nextDateStr = toDateString(new Date(targetYear, targetMonth, safeDay));
+  syncActiveDate(nextDateStr);
 }
 
 historyPrevMonthBtn.addEventListener('click', () => shiftFilterMonth(-1));
 historyNextMonthBtn.addEventListener('click', () => shiftFilterMonth(1));
 
-// Klik label bulan di Riwayat untuk langsung loncat ke bulan/tahun/tanggal mana pun
 historyMonthBtn.addEventListener('click', () => {
   calendarMode = 'filter';
   calendarViewDate = parseDateString(selectedFilterDate);
+  closeCalendarBtn.classList.remove('ready');
+  closeCalendarBtn.textContent = 'Tutup';
   renderCalendarModal();
   calendarModal.classList.add('open');
 });
@@ -177,44 +215,54 @@ function renderDateStrip() {
   const refDate = parseDateString(selectedFilterDate);
   const year = refDate.getFullYear();
   const month = refDate.getMonth();
+  const monthKey = `${year}-${month}`;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  historyMonthLabel.textContent = `${NAMA_BULAN[month]} ${year}`;
-  dateStrip.innerHTML = '';
-
   const datesWithTrx = new Set(transactions.map((t) => t.date));
 
-  for (let day = 1; day <= daysInMonth; day++) {
-    const dObj = new Date(year, month, day);
-    const dStr = toDateString(dObj);
+  historyMonthLabel.textContent = `${NAMA_BULAN[month]} ${year}`;
 
-    const pill = document.createElement('div');
-    pill.className = 'date-pill';
-    if (!isShowAll && dStr === selectedFilterDate) pill.classList.add('active');
-    if (datesWithTrx.has(dStr)) pill.classList.add('has-trx');
+  if (renderedStripMonthKey !== monthKey) {
+    dateStrip.innerHTML = '';
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dObj = new Date(year, month, day);
+      const dStr = toDateString(dObj);
 
-    pill.innerHTML = `
-      <span class="day-name">${NAMA_HARI[dObj.getDay()]}</span>
-      <span class="day-num">${day}</span>
-      <span class="dot-indicator"></span>
-    `;
+      const pill = document.createElement('div');
+      pill.className = 'date-pill';
+      pill.dataset.date = dStr;
 
-    pill.addEventListener('click', () => {
-      isShowAll = false;
-      btnShowAll.classList.remove('active');
-      selectedFilterDate = dStr;
-      updateUI();
-    });
+      pill.innerHTML = `
+        <span class="day-name">${NAMA_HARI[dObj.getDay()]}</span>
+        <span class="day-num">${day}</span>
+        <span class="dot-indicator"></span>
+      `;
 
-    dateStrip.appendChild(pill);
+      pill.addEventListener('click', () => {
+        syncActiveDate(dStr);
+      });
+
+      dateStrip.appendChild(pill);
+    }
+    renderedStripMonthKey = monthKey;
   }
 
-  setTimeout(() => {
-    const activePill = dateStrip.querySelector('.date-pill.active');
-    if (activePill) {
-      activePill.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-    }
-  }, 50);
+  let activePill = null;
+  dateStrip.querySelectorAll('.date-pill').forEach((pill) => {
+    const dStr = pill.dataset.date;
+    const isActive = !isShowAll && dStr === selectedFilterDate;
+    pill.classList.toggle('active', isActive);
+    pill.classList.toggle('has-trx', datesWithTrx.has(dStr));
+    if (isActive) activePill = pill;
+  });
+
+  if (activePill) {
+    const targetScrollLeft =
+      activePill.offsetLeft - dateStrip.clientWidth / 2 + activePill.clientWidth / 2;
+    dateStrip.scrollTo({
+      left: Math.max(0, targetScrollLeft),
+      behavior: 'smooth'
+    });
+  }
 }
 
 function renderCalendarModal() {
@@ -246,17 +294,8 @@ function renderCalendarModal() {
     if (datesWithTrx.has(dStr)) cell.classList.add('has-trx');
 
     cell.addEventListener('click', () => {
-      if (calendarMode === 'input') {
-        selectedInputDate = dStr;
-        updateInputDateDisplay();
-      } else {
-        selectedFilterDate = dStr;
-        isShowAll = false;
-        btnShowAll.classList.remove('active');
-        updateUI();
-      }
+      syncActiveDate(dStr);
 
-      // Aktifkan indikator tombol Selesai jadi biru + tampilkan tanggal terpilih
       const pickedObj = parseDateString(dStr);
       closeCalendarBtn.classList.add('ready');
       closeCalendarBtn.textContent = `Selesai (${pickedObj.getDate()} ${NAMA_BULAN[pickedObj.getMonth()].slice(0, 3)})`;
@@ -268,33 +307,44 @@ function renderCalendarModal() {
   }
 }
 
-inputDateTrigger.addEventListener('click', () => {
-  calendarMode = 'input';
-  calendarViewDate = parseDateString(selectedInputDate);
-  // Reset tombol ke status netral saat modal baru dibuka
-  closeCalendarBtn.classList.remove('ready');
-  closeCalendarBtn.textContent = 'Tutup';
-  renderCalendarModal();
-  calendarModal.classList.add('open');
-});
+if (inputDateTrigger) {
+  inputDateTrigger.addEventListener('click', () => {
+    calendarMode = 'input';
+    calendarViewDate = parseDateString(selectedInputDate);
+    if (closeCalendarBtn) {
+      closeCalendarBtn.classList.remove('ready');
+      closeCalendarBtn.textContent = 'Tutup';
+    }
+    renderCalendarModal();
+    if (calendarModal) calendarModal.classList.add('open');
+  });
+}
 
-closeCalendarBtn.addEventListener('click', () => {
-  calendarModal.classList.remove('open');
-});
+if (closeCalendarBtn && calendarModal) {
+  closeCalendarBtn.addEventListener('click', () => {
+    calendarModal.classList.remove('open');
+  });
+}
 
-calendarModal.addEventListener('click', (e) => {
-  if (e.target === calendarModal) calendarModal.classList.remove('open');
-});
+if (calendarModal) {
+  calendarModal.addEventListener('click', (e) => {
+    if (e.target === calendarModal) calendarModal.classList.remove('open');
+  });
+}
 
-prevMonthBtn.addEventListener('click', () => {
-  calendarViewDate.setMonth(calendarViewDate.getMonth() - 1);
-  renderCalendarModal();
-});
+if (prevMonthBtn) {
+  prevMonthBtn.addEventListener('click', () => {
+    calendarViewDate.setMonth(calendarViewDate.getMonth() - 1);
+    renderCalendarModal();
+  });
+}
 
-nextMonthBtn.addEventListener('click', () => {
-  calendarViewDate.setMonth(calendarViewDate.getMonth() + 1);
-  renderCalendarModal();
-});
+if (nextMonthBtn) {
+  nextMonthBtn.addEventListener('click', () => {
+    calendarViewDate.setMonth(calendarViewDate.getMonth() + 1);
+    renderCalendarModal();
+  });
+}
 
 function getDisplayedTransactions() {
   const indexedTransactions = transactions.map((trx, idx) => ({ ...trx, _order: idx }));
@@ -304,9 +354,17 @@ function getDisplayedTransactions() {
     return a._order - b._order;
   });
 
-  return isShowAll
+  let filtered = isShowAll
     ? sortedTransactions
     : sortedTransactions.filter((trx) => trx.date === selectedFilterDate);
+
+  if (searchQuery) {
+    filtered = filtered.filter((trx) =>
+      trx.description.toLowerCase().includes(searchQuery)
+    );
+  }
+
+  return filtered;
 }
 
 function updateUI() {
@@ -321,51 +379,90 @@ function updateUI() {
     }
   });
 
-  const currentBalance = initialBalance + income - expense;
+  const totalFunds = initialBalance + income;
+  const currentBalance = totalFunds - expense;
+
   totalBalanceEl.textContent = formatRupiah(currentBalance);
   totalIncomeEl.textContent = formatRupiah(income);
   totalExpenseEl.textContent = formatRupiah(expense);
+  initialBalanceDisplayEl.textContent = formatRupiah(initialBalance);
+
+  const spentPct = totalFunds > 0
+    ? Math.min(100, Math.round((expense / totalFunds) * 100))
+    : (expense > 0 ? 100 : 0);
+  const remainPct = Math.max(0, 100 - spentPct);
+  const incomeGrowthPct = initialBalance > 0
+    ? Math.round((income / initialBalance) * 100)
+    : (income > 0 ? 100 : 0);
+
+  badgeBalanceEl.textContent = `${remainPct}%`;
+  badgeExpenseEl.textContent = `-${spentPct}%`;
+  badgeIncomeEl.textContent = `+${incomeGrowthPct}%`;
 
   renderDateStrip();
+
+  const tableWrapper = document.querySelector('.table-wrapper');
+  const startHeight = tableWrapper ? tableWrapper.offsetHeight : 0;
 
   const visibleTransactions = getDisplayedTransactions();
   transactionList.innerHTML = '';
 
+  transactionList.classList.remove('slide-next', 'slide-prev');
+  void transactionList.offsetWidth;
+  transactionList.classList.add(slideDirection === 'prev' ? 'slide-prev' : 'slide-next');
+
   if (visibleTransactions.length === 0) {
     const emptyMsg = document.createElement('li');
     emptyMsg.className = 'empty-state';
-    emptyMsg.textContent = isShowAll
-      ? 'Belum ada catatan transaksi sama sekali.'
-      : `Tidak ada transaksi pada ${formatTanggalIndo(selectedFilterDate)}.`;
+    emptyMsg.textContent = searchQuery
+      ? `Tidak ditemukan transaksi dengan kata kunci "${searchQuery}".`
+      : isShowAll
+        ? 'Belum ada catatan transaksi sama sekali.'
+        : `Tidak ada transaksi pada ${formatTanggalIndo(selectedFilterDate)}.`;
     transactionList.appendChild(emptyMsg);
-    return;
+  } else {
+    visibleTransactions.forEach((trx) => {
+      const li = document.createElement('li');
+      li.className = 'transaction-item';
+
+      const isIncome = trx.type === 'income';
+      const sign = isIncome ? '+' : '-';
+      const amountClass = isIncome ? 'amount-plus' : 'amount-minus';
+      const pillClass = isIncome ? 'credit' : 'debit';
+      const pillText = isIncome ? 'Credit' : 'Debit';
+
+      li.innerHTML = `
+        <span class="col-date">${formatTanggalIndo(trx.date)}</span>
+        <span class="col-desc">${trx.description}</span>
+        <span class="col-type"><span class="type-pill ${pillClass}">${pillText}</span></span>
+        <span class="col-amount ${amountClass}">${sign} ${formatRupiah(trx.amount)}</span>
+        <span class="col-action">
+          <button class="delete-btn" onclick="deleteTransaction('${trx.id}')" title="Hapus">✕</button>
+        </span>
+      `;
+
+      transactionList.appendChild(li);
+    });
   }
 
-  visibleTransactions.forEach((trx) => {
-    const li = document.createElement('li');
-    li.className = 'transaction-item';
+  if (tableWrapper && startHeight > 0) {
+    tableWrapper.style.height = 'auto';
+    const endHeight = tableWrapper.offsetHeight;
+    tableWrapper.style.height = `${startHeight}px`;
+    void tableWrapper.offsetHeight;
+    tableWrapper.style.height = `${endHeight}px`;
 
-    const isIncome = trx.type === 'income';
-    const sign = isIncome ? '+' : '-';
-    const amountClass = isIncome ? 'amount-plus' : 'amount-minus';
-
-    li.innerHTML = `
-      <div class="item-info">
-        <h4>${trx.description}</h4>
-        <span>${formatTanggalIndo(trx.date)}</span>
-      </div>
-      <div class="item-right">
-        <span class="${amountClass}">${sign} ${formatRupiah(trx.amount)}</span>
-        <button class="delete-btn" onclick="deleteTransaction('${trx.id}')">✕</button>
-      </div>
-    `;
-
-    transactionList.appendChild(li);
-  });
+    clearTimeout(tableWrapper._heightTimer);
+    tableWrapper._heightTimer = setTimeout(() => {
+      tableWrapper.style.height = 'auto';
+    }, 300);
+  }
 }
 
-// Export to Excel
-btnExportExcel.addEventListener('click', () => {
+// ==========================================
+// EXPORT KE EXCEL
+// ==========================================
+function exportToExcel() {
   const dataToExport = getDisplayedTransactions();
 
   if (dataToExport.length === 0) {
@@ -420,7 +517,10 @@ btnExportExcel.addEventListener('click', () => {
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
-});
+}
+
+btnExportExcel.addEventListener('click', exportToExcel);
+if (btnExportExcelSide) btnExportExcelSide.addEventListener('click', exportToExcel);
 
 btnShowAll.addEventListener('click', () => {
   isShowAll = !isShowAll;
@@ -428,19 +528,59 @@ btnShowAll.addEventListener('click', () => {
   updateUI();
 });
 
-// Set Saldo Awal ke Supabase
-btnSetSaldo.addEventListener('click', async () => {
-  const defaultFormatted = initialBalance > 0 ? formatRibuan(initialBalance) : '';
-  const input = prompt('Masukkan nominal saldo awal kamu (Rp):', defaultFormatted);
-  if (input !== null && input.trim() !== '') {
-    const newSaldo = parseRupiahToNumber(input);
-    btnSetSaldo.textContent = 'Menyimpan...';
+// ==========================================
+// CUSTOM MODAL SET SALDO AWAL
+// ==========================================
+if (saldoModalInput) {
+  saldoModalInput.addEventListener('input', (e) => {
+    const rawValue = e.target.value.replace(/[^0-9]/g, '');
+    e.target.value = rawValue === '' ? '' : formatRibuan(Number(rawValue));
+  });
+}
+
+document.querySelectorAll('.preset-chip').forEach((chip) => {
+  chip.addEventListener('click', () => {
+    if (!saldoModalInput) return;
+    const val = Number(chip.dataset.val);
+    saldoModalInput.value = formatRibuan(val);
+    saldoModalInput.focus();
+  });
+});
+
+btnSetSaldo.addEventListener('click', () => {
+  if (!saldoModal || !saldoModalInput) return;
+  saldoModalInput.value = initialBalance > 0 ? formatRibuan(initialBalance) : '';
+  saldoModal.classList.add('open');
+  setTimeout(() => saldoModalInput.focus(), 120);
+});
+
+if (closeSaldoModalBtn) {
+  closeSaldoModalBtn.addEventListener('click', () => {
+    saldoModal.classList.remove('open');
+  });
+}
+
+if (saldoModal) {
+  saldoModal.addEventListener('click', (e) => {
+    if (e.target === saldoModal) saldoModal.classList.remove('open');
+  });
+}
+
+if (saldoForm) {
+  saldoForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const newSaldo = parseRupiahToNumber(saldoModalInput.value);
+
+    btnSaveSaldo.disabled = true;
+    btnSaveSaldo.textContent = 'Menyimpan...';
 
     const { error } = await db
       .from('settings')
       .upsert({ id: 1, initial_balance: newSaldo });
 
-    btnSetSaldo.textContent = 'Set Saldo Awal';
+    btnSaveSaldo.disabled = false;
+    btnSaveSaldo.textContent = 'Simpan Saldo';
+
     if (error) {
       alert('Gagal menyimpan saldo: ' + error.message);
       return;
@@ -448,10 +588,13 @@ btnSetSaldo.addEventListener('click', async () => {
 
     initialBalance = newSaldo;
     updateUI();
-  }
-});
+    saldoModal.classList.remove('open');
+  });
+}
 
-// Simpan Transaksi Baru ke Supabase
+// ==========================================
+// SIMPAN & HAPUS TRANSAKSI
+// ==========================================
 transactionForm.addEventListener('submit', async (e) => {
   e.preventDefault();
 
@@ -471,29 +614,30 @@ transactionForm.addEventListener('submit', async (e) => {
   };
 
   btnSubmit.disabled = true;
-  btnSubmit.textContent = 'Menyimpan ke Cloud...';
+  btnSubmit.textContent = 'Menyimpan...';
 
   const { error } = await db.from('transactions').insert([newTransaction]);
 
   btnSubmit.disabled = false;
-  btnSubmit.textContent = 'Simpan Transaksi';
 
   if (error) {
+    btnSubmit.textContent = 'Simpan Transaksi';
     alert('Gagal menyimpan transaksi: ' + error.message);
     return;
   }
 
   transactions.push(newTransaction);
-  if (!isShowAll) {
-    selectedFilterDate = date;
-  }
+  syncActiveDate(date);
 
-  updateUI();
   amountInput.value = '';
   document.getElementById('description').value = '';
+
+  btnSubmit.textContent = `✓ Tersimpan di ${formatTanggalIndo(date)}`;
+  setTimeout(() => {
+    btnSubmit.textContent = 'Simpan Transaksi';
+  }, 1800);
 });
 
-// Hapus 1 Transaksi dari Supabase
 async function deleteTransaction(id) {
   const { error } = await db.from('transactions').delete().eq('id', String(id));
   if (error) {
@@ -504,9 +648,8 @@ async function deleteTransaction(id) {
   updateUI();
 }
 
-// Reset Semua Data di Supabase
 btnReset.addEventListener('click', async () => {
-  if (confirm('Yakin mau hapus semua saldo dan riwayat transaksi di Mac & iPhone?')) {
+  if (confirm('Yakin mau hapus semua saldo dan riwayat transaksi di semua perangkat?')) {
     await db.from('transactions').delete().neq('id', '0');
     await db.from('settings').upsert({ id: 1, initial_balance: 0 });
     initialBalance = 0;
@@ -515,6 +658,5 @@ btnReset.addEventListener('click', async () => {
   }
 });
 
-// Jalankan pertama kali
 updateInputDateDisplay();
 loadCloudData();

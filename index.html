@@ -3,117 +3,179 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>MyMoney - iPhone Tracker</title>
+  <title>MyMoney • Dark Fintech Tracker</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" href="favicon.png">
 </head>
 <body>
 
-  <div class="iphone-frame">
+  <div class="dashboard-container">
     
-    <!-- Header -->
-    <header class="app-header">
-      <div>
-        <p class="subtitle">Ringkasan Keuangan • Cloud Sync</p>
-        <h1>MyMoney</h1>
+    <!-- SIDEBAR KIRI (Desktop) / TOP HEADER (Mobile) -->
+    <aside class="sidebar">
+      <div class="brand-header">
+        <div class="brand-logo">
+          <span class="logo-half-left"></span>
+          <span class="logo-half-right"></span>
+        </div>
+        <span class="brand-name">MyMoney</span>
       </div>
-      <button id="btn-set-saldo" class="btn-outline">Set Saldo Awal</button>
-    </header>
 
-    <!-- Kartu Saldo Utama -->
-    <section class="balance-card">
-      <p class="balance-label">Total Saldo Saat Ini</p>
-      <h2 id="total-balance">Memuat...</h2>
+      <div class="sidebar-footer">
+        <div class="sync-status-card">
+          <div class="sync-row">
+            <span class="live-dot"></span>
+            <strong>Supabase Cloud</strong>
+          </div>
+          <p>Data tersinkronisasi otomatis antara Mac, Windows & iPhone.</p>
+          <button type="button" id="btn-export-excel-side" class="btn-side-action">
+            Export Excel (.xls) ›
+          </button>
+        </div>
+      </div>
+    </aside>
+
+   <!-- MAIN CONTENT KANAN -->
+    <main class="main-content" id="overview-section">
       
-      <div class="summary-row">
-        <div class="summary-box income">
-          <span>↓ Pemasukan</span>
-          <strong id="total-income">Rp 0</strong>
+      <!-- Top Bar -->
+<header class="topbar">
+        <div class="topbar-left">
+          <h1>Overview</h1>
         </div>
-        <div class="summary-box expense">
-          <span>↑ Pengeluaran</span>
-          <strong id="total-expense">Rp 0</strong>
+        <div class="topbar-right">
+          <button type="button" id="btn-set-saldo" class="btn-dark-pill">
+            <span class="avatar-badge">RP</span>
+            <span>Set Saldo Awal</span>
+          </button>
         </div>
-      </div>
-    </section>
+      </header>
 
-    <!-- Form Input Transaksi -->
-    <section class="input-section">
-      <h3>Catat Transaksi Baru</h3>
-      <form id="transaction-form">
-        
-        <div class="type-selector">
-          <input type="radio" id="type-expense" name="type" value="expense" checked>
-          <label for="type-expense" class="tab-btn expense-tab">Pengeluaran (-)</label>
-
-          <input type="radio" id="type-income" name="type" value="income">
-          <label for="type-income" class="tab-btn income-tab">Pemasukan (+)</label>
+      <!-- 4 KPI STAT CARDS -->
+      <section class="kpi-grid">
+        <div class="stat-card">
+          <span class="stat-label">Balance</span>
+          <div class="stat-value-row">
+            <h2 id="total-balance">Memuat...</h2>
+            <span class="trend-badge positive" id="badge-balance">100%</span>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label for="amount">Nominal (Rp)</label>
-          <input type="text" id="amount" inputmode="numeric" placeholder="Contoh: 100.000" required>
+        <div class="stat-card">
+          <span class="stat-label">Expenses</span>
+          <div class="stat-value-row">
+            <h2 id="total-expense">Rp 0</h2>
+            <span class="trend-badge negative" id="badge-expense">-0%</span>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label for="description">Keterangan (Ke mana / Dari mana)</label>
-          <input type="text" id="description" placeholder="Contoh: Kopi Kenangan, Gaji, Bensin..." required>
+        <div class="stat-card">
+          <span class="stat-label">Income</span>
+          <div class="stat-value-row">
+            <h2 id="total-income">Rp 0</h2>
+            <span class="trend-badge positive" id="badge-income">+0%</span>
+          </div>
         </div>
 
-        <!-- Aesthetic Date Selector untuk Input -->
-        <div class="form-group">
-          <label>Tanggal Transaksi</label>
-          <div class="custom-date-trigger" id="input-date-trigger">
-            <div class="date-trigger-left">
-              <span class="calendar-icon">📅</span>
-              <span id="input-date-label">Hari ini</span>
+        <div class="stat-card">
+          <span class="stat-label">Initial Capital</span>
+          <div class="stat-value-row">
+            <h2 id="initial-balance-display">Rp 0</h2>
+            <span class="trend-badge neutral">Modal</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- FORM CATAT TRANSAKSI (FULL WIDTH RAPI) -->
+      <section class="panel-card" id="input-section">
+        <div class="panel-header">
+          <h3>Catat Transaksi</h3>
+          <span class="panel-subtitle">Input harian</span>
+        </div>
+
+        <form id="transaction-form">
+          <div class="type-selector">
+            <input type="radio" id="type-expense" name="type" value="expense" checked>
+            <label for="type-expense" class="tab-btn expense-tab">Pengeluaran (-)</label>
+
+            <input type="radio" id="type-income" name="type" value="income">
+            <label for="type-income" class="tab-btn income-tab">Pemasukan (+)</label>
+          </div>
+
+          <div class="form-two-col">
+            <div class="form-group">
+              <label for="amount">Nominal (Rp)</label>
+              <input type="text" id="amount" inputmode="numeric" placeholder="100.000" required>
             </div>
-            <span class="chevron">Ubah ›</span>
+
+            <div class="form-group">
+              <label>Tanggal</label>
+              <div class="custom-date-trigger" id="input-date-trigger">
+                <span id="input-date-label">Hari ini</span>
+                <span class="chevron">▾</span>
+              </div>
+              <input type="hidden" id="date" required>
+            </div>
           </div>
-          <input type="hidden" id="date" required>
-        </div>
 
-        <button type="submit" id="btn-submit" class="btn-primary">Simpan Transaksi</button>
-      </form>
-    </section>
+          <div class="form-group">
+            <label for="description">Keterangan</label>
+            <input type="text" id="description" placeholder="Contoh: Kopi Kenangan, Gaji, Bensin..." required>
+          </div>
 
-    <!-- Daftar Riwayat Transaksi -->
-    <section class="history-section">
-      <div class="history-header">
-        <div>
-          <h3>Riwayat Transaksi</h3>
-          <!-- Navigasi Bulan & Tahun untuk Riwayat -->
-          <div class="history-month-switcher">
-            <button type="button" id="history-prev-month" class="month-mini-btn" aria-label="Bulan sebelumnya">‹</button>
-            <button type="button" id="history-month-btn" class="history-month-label-btn">
-              <span id="history-month-label">November 2026</span> ▾
-            </button>
-            <button type="button" id="history-next-month" class="month-mini-btn" aria-label="Bulan berikutnya">›</button>
+          <button type="submit" id="btn-submit" class="btn-lime-submit">Simpan Transaksi</button>
+        </form>
+      </section>
+
+      <!-- BOTTOM SECTION: Recent Activity -->
+      <section class="panel-card activity-panel" id="activity-section">
+        <div class="activity-topbar">
+          <div class="activity-title-group">
+            <h3>Recent Activity</h3>
+            <div class="month-switcher">
+              <button type="button" id="history-prev-month" class="month-nav-btn" aria-label="Bulan sebelumnya">‹</button>
+              <button type="button" id="history-month-btn" class="month-label-btn">
+                <span id="history-month-label">November 2026</span> ▾
+              </button>
+              <button type="button" id="history-next-month" class="month-nav-btn" aria-label="Bulan berikutnya">›</button>
+            </div>
+          </div>
+
+          <div class="activity-controls">
+            <div class="search-box">
+              <span class="search-icon">⌕</span>
+              <input type="text" id="search-input" placeholder="Search...">
+            </div>
+            <button type="button" id="btn-show-all" class="btn-control">Semua</button>
+            <button type="button" id="btn-export-excel" class="btn-control">Export</button>
+            <button type="button" id="btn-reset" class="btn-control danger">Reset</button>
           </div>
         </div>
-        <div class="history-actions">
-          <button id="btn-show-all" class="btn-filter-all">Semua</button>
-          <button id="btn-reset" class="btn-text-danger">Reset</button>
+
+        <!-- Horizontal Date Strip -->
+        <div class="date-strip-wrapper">
+          <div class="date-strip" id="date-strip"></div>
         </div>
-      </div>
 
-      <!-- Aesthetic Horizontal Date Strip -->
-      <div class="date-strip-wrapper" id="date-strip-wrapper">
-        <div class="date-strip" id="date-strip"></div>
-      </div>
+        <!-- Tabel / List Transaksi -->
+        <div class="table-wrapper">
+          <div class="table-head">
+            <span>Date</span>
+            <span>Description</span>
+            <span>Type</span>
+            <span class="text-right">Amount</span>
+            <span class="text-right">Action</span>
+          </div>
+          <ul id="transaction-list" class="transaction-list"></ul>
+        </div>
+      </section>
 
-      <ul id="transaction-list" class="transaction-list"></ul>
-
-      <!-- Tombol Export to Excel Terpisah di Bawah -->
-      <div class="export-section">
-        <button id="btn-export-excel" class="btn-excel-standalone">
-          📊 Export to Excel
-        </button>
-      </div>
-    </section>
-
+    </main>
   </div>
 
-  <!-- Bottom Sheet Custom Calendar Picker (Dipakai untuk Form Input & Filter Riwayat) -->
+  <!-- Bottom Sheet Custom Calendar Picker -->
+<!-- Bottom Sheet Custom Calendar Picker -->
   <div class="modal-backdrop" id="calendar-modal">
     <div class="bottom-sheet">
       <div class="sheet-handle"></div>
@@ -126,7 +188,38 @@
         <span>Min</span><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span>
       </div>
       <div class="calendar-grid" id="calendar-grid"></div>
-      <button type="button" id="close-calendar" class="btn-sheet-close">Selesai</button>
+      <button type="button" id="close-calendar" class="btn-sheet-close">Tutup</button>
+    </div>
+  </div>
+
+  <!-- Bottom Sheet Custom Set Saldo Awal -->
+  <div class="modal-backdrop" id="saldo-modal">
+    <div class="bottom-sheet saldo-sheet">
+      <div class="sheet-handle"></div>
+      <div class="saldo-modal-header">
+        <h4>Atur Saldo Awal</h4>
+        <p>Masukkan modal awal untuk menghitung sisa saldo & persentase pengeluaran.</p>
+      </div>
+
+      <form id="saldo-form">
+        <div class="saldo-input-box">
+          <span class="currency-prefix">Rp</span>
+          <input type="text" id="saldo-modal-input" inputmode="numeric" placeholder="0" autocomplete="off" required>
+        </div>
+
+        <div class="preset-chips">
+          <button type="button" class="preset-chip" data-val="500000">500 rb</button>
+          <button type="button" class="preset-chip" data-val="1000000">1 Jt</button>
+          <button type="button" class="preset-chip" data-val="3000000">3 Jt</button>
+          <button type="button" class="preset-chip" data-val="5000000">5 Jt</button>
+          <button type="button" class="preset-chip" data-val="10000000">10 Jt</button>
+        </div>
+
+        <div class="saldo-modal-actions">
+          <button type="button" id="close-saldo-modal" class="btn-sheet-cancel">Batal</button>
+          <button type="submit" id="btn-save-saldo" class="btn-sheet-save">Simpan Saldo</button>
+        </div>
+      </form>
     </div>
   </div>
 
