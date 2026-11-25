@@ -22,6 +22,9 @@ const inputDateTrigger = document.getElementById('input-date-trigger');
 const inputDateLabel = document.getElementById('input-date-label');
 const dateStrip = document.getElementById('date-strip');
 const historyMonthLabel = document.getElementById('history-month-label');
+const historyPrevMonthBtn = document.getElementById('history-prev-month');
+const historyNextMonthBtn = document.getElementById('history-next-month');
+const historyMonthBtn = document.getElementById('history-month-btn');
 const btnShowAll = document.getElementById('btn-show-all');
 
 // Elemen Bottom Sheet Calendar
@@ -65,6 +68,7 @@ let selectedInputDate = todayStr;
 let selectedFilterDate = todayStr;
 let isShowAll = false;
 let calendarViewDate = new Date();
+let calendarMode = 'input'; // 'input' atau 'filter'
 
 let initialBalance = 0;
 let transactions = [];
@@ -95,7 +99,6 @@ amountInput.addEventListener('input', (e) => {
 // ==========================================
 async function loadCloudData() {
   try {
-    // 1. Ambil Saldo Awal
     const { data: settingData, error: settingErr } = await db
       .from('settings')
       .select('initial_balance')
@@ -106,7 +109,6 @@ async function loadCloudData() {
       initialBalance = Number(settingData.initial_balance) || 0;
     }
 
-    // 2. Ambil Semua Transaksi (urut waktu buat)
     const { data: trxData, error: trxErr } = await db
       .from('transactions')
       .select('*')
@@ -129,7 +131,7 @@ async function loadCloudData() {
   }
 }
 
-// Aktifkan Realtime Sync (otomatis update kalau HP/Mac nambah/hapus data)
+// Realtime Sync
 db.channel('public-sync')
   .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => {
     loadCloudData();
@@ -145,6 +147,31 @@ function updateInputDateDisplay() {
     ? `Hari ini (${formatTanggalIndo(selectedInputDate)})`
     : formatTanggalIndo(selectedInputDate);
 }
+
+// Fungsi pindah bulan pada riwayat transaksi
+function shiftFilterMonth(offset) {
+  const current = parseDateString(selectedFilterDate);
+  const targetYear = current.getFullYear();
+  const targetMonth = current.getMonth() + offset;
+  const maxDaysInTarget = new Date(targetYear, targetMonth + 1, 0).getDate();
+  const safeDay = Math.min(current.getDate(), maxDaysInTarget);
+
+  selectedFilterDate = toDateString(new Date(targetYear, targetMonth, safeDay));
+  isShowAll = false;
+  btnShowAll.classList.remove('active');
+  updateUI();
+}
+
+historyPrevMonthBtn.addEventListener('click', () => shiftFilterMonth(-1));
+historyNextMonthBtn.addEventListener('click', () => shiftFilterMonth(1));
+
+// Klik label bulan di Riwayat untuk langsung loncat ke bulan/tahun/tanggal mana pun
+historyMonthBtn.addEventListener('click', () => {
+  calendarMode = 'filter';
+  calendarViewDate = parseDateString(selectedFilterDate);
+  renderCalendarModal();
+  calendarModal.classList.add('open');
+});
 
 function renderDateStrip() {
   const refDate = parseDateString(selectedFilterDate);
@@ -197,6 +224,8 @@ function renderCalendarModal() {
 
   const firstDayIndex = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const activeTargetDate = calendarMode === 'input' ? selectedInputDate : selectedFilterDate;
+  const datesWithTrx = new Set(transactions.map((t) => t.date));
 
   calendarGrid.innerHTML = '';
 
@@ -213,11 +242,19 @@ function renderCalendarModal() {
     cell.textContent = day;
 
     if (dStr === todayStr) cell.classList.add('today');
-    if (dStr === selectedInputDate) cell.classList.add('selected');
+    if (dStr === activeTargetDate) cell.classList.add('selected');
+    if (datesWithTrx.has(dStr)) cell.classList.add('has-trx');
 
     cell.addEventListener('click', () => {
-      selectedInputDate = dStr;
-      updateInputDateDisplay();
+      if (calendarMode === 'input') {
+        selectedInputDate = dStr;
+        updateInputDateDisplay();
+      } else {
+        selectedFilterDate = dStr;
+        isShowAll = false;
+        btnShowAll.classList.remove('active');
+        updateUI();
+      }
       renderCalendarModal();
     });
 
@@ -226,6 +263,7 @@ function renderCalendarModal() {
 }
 
 inputDateTrigger.addEventListener('click', () => {
+  calendarMode = 'input';
   calendarViewDate = parseDateString(selectedInputDate);
   renderCalendarModal();
   calendarModal.classList.add('open');

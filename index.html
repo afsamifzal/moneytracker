@@ -81,7 +81,14 @@
       <div class="history-header">
         <div>
           <h3>Riwayat Transaksi</h3>
-          <p class="history-month-label" id="history-month-label">November 2026</p>
+          <!-- Navigasi Bulan & Tahun untuk Riwayat -->
+          <div class="history-month-switcher">
+            <button type="button" id="history-prev-month" class="month-mini-btn" aria-label="Bulan sebelumnya">‹</button>
+            <button type="button" id="history-month-btn" class="history-month-label-btn">
+              <span id="history-month-label">November 2026</span> ▾
+            </button>
+            <button type="button" id="history-next-month" class="month-mini-btn" aria-label="Bulan berikutnya">›</button>
+          </div>
         </div>
         <div class="history-actions">
           <button id="btn-show-all" class="btn-filter-all">Semua</button>
@@ -106,7 +113,7 @@
 
   </div>
 
-  <!-- Bottom Sheet Custom Calendar Picker -->
+  <!-- Bottom Sheet Custom Calendar Picker (Dipakai untuk Form Input & Filter Riwayat) -->
   <div class="modal-backdrop" id="calendar-modal">
     <div class="bottom-sheet">
       <div class="sheet-handle"></div>
