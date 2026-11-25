@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MyMoney - iPhone Tracker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="iphone-frame">
+    
+    <!-- Header -->
+    <header class="app-header">
+      <div>
+        <p class="subtitle">Ringkasan Keuangan • Cloud Sync</p>
+        <h1>MyMoney</h1>
+      </div>
+      <button id="btn-set-saldo" class="btn-outline">Set Saldo Awal</button>
+    </header>
+
+    <!-- Kartu Saldo Utama -->
+    <section class="balance-card">
+      <p class="balance-label">Total Saldo Saat Ini</p>
+      <h2 id="total-balance">Memuat...</h2>
+      
+      <div class="summary-row">
+        <div class="summary-box income">
+          <span>↓ Pemasukan</span>
+          <strong id="total-income">Rp 0</strong>
+        </div>
+        <div class="summary-box expense">
+          <span>↑ Pengeluaran</span>
+          <strong id="total-expense">Rp 0</strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- Form Input Transaksi -->
+    <section class="input-section">
+      <h3>Catat Transaksi Baru</h3>
+      <form id="transaction-form">
+        
+        <div class="type-selector">
+          <input type="radio" id="type-expense" name="type" value="expense" checked>
+          <label for="type-expense" class="tab-btn expense-tab">Pengeluaran (-)</label>
+
+          <input type="radio" id="type-income" name="type" value="income">
+          <label for="type-income" class="tab-btn income-tab">Pemasukan (+)</label>
+        </div>
+
+        <div class="form-group">
+          <label for="amount">Nominal (Rp)</label>
+          <input type="text" id="amount" inputmode="numeric" placeholder="Contoh: 100.000" required>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Keterangan (Ke mana / Dari mana)</label>
+          <input type="text" id="description" placeholder="Contoh: Kopi Kenangan, Gaji, Bensin..." required>
+        </div>
+
+        <!-- Aesthetic Date Selector untuk Input -->
+        <div class="form-group">
+          <label>Tanggal Transaksi</label>
+          <div class="custom-date-trigger" id="input-date-trigger">
+            <div class="date-trigger-left">
+              <span class="calendar-icon">📅</span>
+              <span id="input-date-label">Hari ini</span>
+            </div>
+            <span class="chevron">Ubah ›</span>
+          </div>
+          <input type="hidden" id="date" required>
+        </div>
+
+        <button type="submit" id="btn-submit" class="btn-primary">Simpan Transaksi</button>
+      </form>
+    </section>
+
+    <!-- Daftar Riwayat Transaksi -->
+    <section class="history-section">
+      <div class="history-header">
+        <div>
+          <h3>Riwayat Transaksi</h3>
+          <p class="history-month-label" id="history-month-label">November 2026</p>
+        </div>
+        <div class="history-actions">
+          <button id="btn-show-all" class="btn-filter-all">Semua</button>
+          <button id="btn-reset" class="btn-text-danger">Reset</button>
+        </div>
+      </div>
+
+      <!-- Aesthetic Horizontal Date Strip -->
+      <div class="date-strip-wrapper" id="date-strip-wrapper">
+        <div class="date-strip" id="date-strip"></div>
+      </div>
+
+      <ul id="transaction-list" class="transaction-list"></ul>
+
+      <!-- Tombol Export to Excel Terpisah di Bawah -->
+      <div class="export-section">
+        <button id="btn-export-excel" class="btn-excel-standalone">
+          📊 Export to Excel
+        </button>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Bottom Sheet Custom Calendar Picker -->
+  <div class="modal-backdrop" id="calendar-modal">
+    <div class="bottom-sheet">
+      <div class="sheet-handle"></div>
+      <div class="calendar-nav">
+        <button type="button" id="prev-month" class="cal-nav-btn">‹</button>
+        <h4 id="cal-month-year">November 2026</h4>
+        <button type="button" id="next-month" class="cal-nav-btn">›</button>
+      </div>
+      <div class="calendar-weekdays">
+        <span>Min</span><span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span>
+      </div>
+      <div class="calendar-grid" id="calendar-grid"></div>
+      <button type="button" id="close-calendar" class="btn-sheet-close">Selesai</button>
+    </div>
+  </div>
+
+  <!-- Library Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="script.js"></script>
+</body>
+</html>
