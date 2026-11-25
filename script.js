@@ -660,3 +660,30 @@ btnReset.addEventListener('click', async () => {
 
 updateInputDateDisplay();
 loadCloudData();
+
+// ==========================================
+// SWITCH LIGHT & DARK MODE
+// ==========================================
+const btnThemeToggle = document.getElementById('btn-theme-toggle');
+const themeIcon = document.getElementById('theme-icon');
+
+function applyTheme(theme) {
+  const isLight = theme === 'light';
+  document.body.classList.toggle('light-mode', isLight);
+  if (themeIcon) {
+    themeIcon.textContent = isLight ? '🌙' : '☀️';
+  }
+}
+
+// Muat tema terakhir yang tersimpan (default: dark)
+const savedTheme = localStorage.getItem('mymoney_theme') || 'dark';
+applyTheme(savedTheme);
+
+if (btnThemeToggle) {
+  btnThemeToggle.addEventListener('click', () => {
+    const isCurrentlyLight = document.body.classList.contains('light-mode');
+    const nextTheme = isCurrentlyLight ? 'dark' : 'light';
+    applyTheme(nextTheme);
+    localStorage.setItem('mymoney_theme', nextTheme);
+  });
+}
