@@ -3,44 +3,44 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>MyMoney • Dark Fintech Tracker</title>
-  <link rel="stylesheet" href="style.css">
+  <title>MyMoney • Dark Analytics</title>
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="apple-touch-icon" href="favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-  <div class="dashboard-container">
+  <div class="app-shell">
     
-    <!-- SIDEBAR KIRI (Desktop) / TOP HEADER (Mobile) -->
+    <!-- SIDEBAR KIRI (Desktop) -->
     <aside class="sidebar">
-      <div class="brand-header">
+      <div class="brand">
         <div class="brand-logo">
-          <span class="logo-half-left"></span>
-          <span class="logo-half-right"></span>
+          <span class="logo-half left"></span>
+          <span class="logo-half right"></span>
         </div>
         <span class="brand-name">MyMoney</span>
       </div>
 
       <div class="sidebar-footer">
-        <div class="sync-status-card">
-          <div class="sync-row">
-            <span class="live-dot"></span>
+        <div class="cloud-status-card">
+          <div class="cloud-dot-row">
+            <span class="cloud-dot"></span>
             <strong>Supabase Cloud</strong>
           </div>
           <p>Data tersinkronisasi otomatis antara Mac, Windows & iPhone.</p>
-          <button type="button" id="btn-export-excel-side" class="btn-side-action">
-            Export Excel (.xls) ›
-          </button>
+          <button type="button" id="btn-export-excel-side" class="btn-upgrade">Export Excel (.xls) ›</button>
         </div>
       </div>
     </aside>
 
-   <!-- MAIN CONTENT KANAN -->
+    <!-- MAIN CONTENT KANAN -->
     <main class="main-content" id="overview-section">
       
       <!-- Top Bar -->
-<header class="topbar">
+      <header class="topbar">
         <div class="topbar-left">
           <h1>Overview</h1>
         </div>
@@ -143,12 +143,21 @@
           </div>
 
           <div class="activity-controls">
+            <button type="button" id="btn-export-excel" class="btn-control excel-btn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <path d="M9.5 12.5l5 5"></path>
+                <path d="M14.5 12.5l-5 5"></path>
+              </svg>
+              <span>Export Excel</span>
+            </button>
+
             <div class="search-box">
               <span class="search-icon">⌕</span>
               <input type="text" id="search-input" placeholder="Search...">
             </div>
             <button type="button" id="btn-show-all" class="btn-control">Semua</button>
-            <button type="button" id="btn-export-excel" class="btn-control">Export</button>
             <button type="button" id="btn-reset" class="btn-control danger">Reset</button>
           </div>
         </div>
@@ -175,7 +184,6 @@
   </div>
 
   <!-- Bottom Sheet Custom Calendar Picker -->
-<!-- Bottom Sheet Custom Calendar Picker -->
   <div class="modal-backdrop" id="calendar-modal">
     <div class="bottom-sheet">
       <div class="sheet-handle"></div>
@@ -223,7 +231,7 @@
     </div>
   </div>
 
-  <!-- Library Supabase -->
+  <!-- Library Supabase & Script -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="script.js"></script>
 </body>
