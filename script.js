@@ -255,6 +255,12 @@ function renderCalendarModal() {
         btnShowAll.classList.remove('active');
         updateUI();
       }
+
+      // Aktifkan indikator tombol Selesai jadi biru + tampilkan tanggal terpilih
+      const pickedObj = parseDateString(dStr);
+      closeCalendarBtn.classList.add('ready');
+      closeCalendarBtn.textContent = `Selesai (${pickedObj.getDate()} ${NAMA_BULAN[pickedObj.getMonth()].slice(0, 3)})`;
+
       renderCalendarModal();
     });
 
@@ -265,6 +271,9 @@ function renderCalendarModal() {
 inputDateTrigger.addEventListener('click', () => {
   calendarMode = 'input';
   calendarViewDate = parseDateString(selectedInputDate);
+  // Reset tombol ke status netral saat modal baru dibuka
+  closeCalendarBtn.classList.remove('ready');
+  closeCalendarBtn.textContent = 'Tutup';
   renderCalendarModal();
   calendarModal.classList.add('open');
 });

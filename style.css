@@ -628,12 +628,23 @@ body {
 
 .btn-sheet-close {
   width: 100%;
-  padding: 13px;
+  padding: 14px;
   background: #f2f2f7;
-  color: #1c1c1e;
+  color: #636366;
   border: none;
   border-radius: 14px;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-sheet-close.ready {
+  background: #007aff;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+}
+
+.btn-sheet-close:active {
+  transform: scale(0.98);
 }
